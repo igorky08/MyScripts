@@ -334,9 +334,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	elseif getgenv().HitboxStatus == true and getgenv().TeamCheck == true then
 		for i,v in next, Players:GetPlayers() do
-			local localTeam = Players.LocalPlayer.Team
-			local enemyTeam = v.Team
-			if localTeam and enemyTeam and localTeam ~= enemyTeam then
+			if Players.LocalPlayer.Team ~= v.Team and v.Character and v.Character:FindFirstChild("Head") then
 				pcall(function()
 					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
 					v.Character.Head.Transparency = getgenv().HitboxTransparency
