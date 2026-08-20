@@ -1,3 +1,50 @@
+-------------------------------------------------
+--// HITBOX LOGIC
+-------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	if getgenv().HitboxStatus == true and getgenv().TeamCheck == false then
+		for i,v in next, Players:GetPlayers() do
+			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+				pcall(function()
+					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
+					v.Character.Head.Transparency = getgenv().HitboxTransparency
+					v.Character.Head.BrickColor = BrickColor.new("Really black")
+					v.Character.Head.Material = "Neon"
+					v.Character.Head.CanCollide = false
+				end)
+			end
+		end
+	elseif getgenv().HitboxStatus == true and getgenv().TeamCheck == true then
+		for i,v in next, Players:GetPlayers() do
+			local localTeam = Players.LocalPlayer.Team
+			local enemyTeam = v.Team
+			if localTeam and enemyTeam and localTeam ~= enemyTeam then
+				pcall(function()
+					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
+					v.Character.Head.Transparency = getgenv().HitboxTransparency
+					v.Character.Head.BrickColor = BrickColor.new("Really black")
+					v.Character.Head.Material = "Neon"
+					v.Character.Head.CanCollide = false
+				end)
+			end
+		end
+	else
+		for i,v in next, Players:GetPlayers() do
+			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+				pcall(function()
+					v.Character.Head.Size = Vector3.new(1, 1, 1)
+					v.Character.Head.Transparency = 1
+					v.Character.Head.BrickColor = BrickColor.new("Medium stone grey")
+					v.Character.Head.Material = "Plastic"
+					v.Character.Head.CanCollide = false
+				end)
+			end
+		end
+	end
+end)
+La différence : ajout de vérifications localTeam et enemyTeam pour éviter les erreurs quand un joueur n'a pas d'équipe assignée (nil).
+
+refait moi le code 
 --[[
 Open source
 Made by !vcsk0#1516
@@ -10,9 +57,6 @@ Credits to me
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
 -------------------------------------------------
 --// VARIABLES
@@ -21,12 +65,6 @@ getgenv().HitboxSize = 6
 getgenv().HitboxTransparency = 0.9
 getgenv().HitboxStatus = false
 getgenv().TeamCheck = false
-
-getgenv().SilentAim = false
-getgenv().HitChance = 100
-getgenv().HitPart = "Head"
-
-local BodyParts = {"Head", "HumanoidRootPart", "Torso", "UpperTorso", "LowerTorso"}
 
 -------------------------------------------------
 --// FUNCTIONS
@@ -205,7 +243,7 @@ local function CreateButton(parent, name, order, callback)
 	end)
 
 	Button.MouseButton1Click:Connect(function()
-		callback(Button)
+		callback()
 	end)
 end
 
@@ -222,7 +260,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 260, 0, 420)
+MainFrame.Size = UDim2.new(0, 260, 0, 380)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 
@@ -244,7 +282,7 @@ Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Hitbox Expander"
+Title.Text = "Soft Aim.exe"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -312,32 +350,8 @@ CreateToggle(Content, "Team Check", 4, false, function(state)
 	getgenv().TeamCheck = state
 end)
 
-local SilentAimSection = Instance.new("TextLabel")
-SilentAimSection.Parent = Content
-SilentAimSection.Size = UDim2.new(1, 0, 0, 20)
-SilentAimSection.BackgroundTransparency = 1
-SilentAimSection.Text = "— Silent Aim —"
-SilentAimSection.TextColor3 = Color3.fromRGB(100, 100, 140)
-SilentAimSection.Font = Enum.Font.GothamBold
-SilentAimSection.TextSize = 12
-SilentAimSection.LayoutOrder = 5
-
-CreateToggle(Content, "Silent Aim", 6, false, function(state)
-	getgenv().SilentAim = state
-end)
-
-CreateSlider(Content, "Hit Chance", 7, 0, 100, 100, function(value)
-	getgenv().HitChance = value
-end)
-
-local partIndex = 1
-CreateButton(Content, "Body Part: Head", 8, function(btn)
-	partIndex = partIndex + 1
-	if partIndex > #BodyParts then
-		partIndex = 1
-	end
-	getgenv().HitPart = BodyParts[partIndex]
-	btn.Text = "Body Part: " .. BodyParts[partIndex]
+CreateButton(Content, "No Recoil Gun", 5, function()
+	-- à connecter plus tard
 end)
 
 -------------------------------------------------
@@ -350,53 +364,12 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 -------------------------------------------------
---// GET CLOSEST PLAYER
--------------------------------------------------
-local function GetClosestPlayer()
-	local closestPlayer = nil
-	local shortestDistance = math.huge
-	local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-
-	for _, player in next, Players:GetPlayers() do
-		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(getgenv().HitPart) then
-			local part = player.Character:FindFirstChild(getgenv().HitPart)
-			local screenPos, onScreen = Camera:WorldToScreenPoint(part.Position)
-			if onScreen then
-				local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-				if dist < shortestDistance then
-					shortestDistance = dist
-					closestPlayer = player
-				end
-			end
-		end
-	end
-
-	return closestPlayer
-end
-
--------------------------------------------------
---// SILENT AIM (MOUSE TARGET HOOK)
--------------------------------------------------
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
-	if not checkcaller() and getgenv().SilentAim and self == Mouse and (key == "Target" or key == "TargetFrame") then
-		if math.random(1, 100) <= getgenv().HitChance then
-			local closest = GetClosestPlayer()
-			if closest and closest.Character and closest.Character:FindFirstChild(getgenv().HitPart) then
-				return closest.Character:FindFirstChild(getgenv().HitPart)
-			end
-		end
-	end
-	return oldIndex(self, key)
-end))
-
--------------------------------------------------
 --// HITBOX LOGIC
 -------------------------------------------------
 RunService.RenderStepped:Connect(function()
 	if getgenv().HitboxStatus == true and getgenv().TeamCheck == false then
 		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
 				pcall(function()
 					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
 					v.Character.Head.Transparency = getgenv().HitboxTransparency
@@ -408,7 +381,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	elseif getgenv().HitboxStatus == true and getgenv().TeamCheck == true then
 		for i,v in next, Players:GetPlayers() do
-			local localTeam = LocalPlayer.Team
+			local localTeam = Players.LocalPlayer.Team
 			local enemyTeam = v.Team
 			if localTeam and enemyTeam and localTeam ~= enemyTeam then
 				pcall(function()
@@ -422,7 +395,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	else
 		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
 				pcall(function()
 					v.Character.Head.Size = Vector3.new(1, 1, 1)
 					v.Character.Head.Transparency = 1
