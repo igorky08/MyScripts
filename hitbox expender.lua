@@ -1,50 +1,3 @@
--------------------------------------------------
---// HITBOX LOGIC
--------------------------------------------------
-RunService.RenderStepped:Connect(function()
-	if getgenv().HitboxStatus == true and getgenv().TeamCheck == false then
-		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
-				pcall(function()
-					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
-					v.Character.Head.Transparency = getgenv().HitboxTransparency
-					v.Character.Head.BrickColor = BrickColor.new("Really black")
-					v.Character.Head.Material = "Neon"
-					v.Character.Head.CanCollide = false
-				end)
-			end
-		end
-	elseif getgenv().HitboxStatus == true and getgenv().TeamCheck == true then
-		for i,v in next, Players:GetPlayers() do
-			local localTeam = Players.LocalPlayer.Team
-			local enemyTeam = v.Team
-			if localTeam and enemyTeam and localTeam ~= enemyTeam then
-				pcall(function()
-					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
-					v.Character.Head.Transparency = getgenv().HitboxTransparency
-					v.Character.Head.BrickColor = BrickColor.new("Really black")
-					v.Character.Head.Material = "Neon"
-					v.Character.Head.CanCollide = false
-				end)
-			end
-		end
-	else
-		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
-				pcall(function()
-					v.Character.Head.Size = Vector3.new(1, 1, 1)
-					v.Character.Head.Transparency = 1
-					v.Character.Head.BrickColor = BrickColor.new("Medium stone grey")
-					v.Character.Head.Material = "Plastic"
-					v.Character.Head.CanCollide = false
-				end)
-			end
-		end
-	end
-end)
-La différence : ajout de vérifications localTeam et enemyTeam pour éviter les erreurs quand un joueur n'a pas d'équipe assignée (nil).
-
-refait moi le code 
 --[[
 Open source
 Made by !vcsk0#1516
@@ -57,6 +10,7 @@ Credits to me
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
 -------------------------------------------------
 --// VARIABLES
@@ -65,6 +19,8 @@ getgenv().HitboxSize = 6
 getgenv().HitboxTransparency = 0.9
 getgenv().HitboxStatus = false
 getgenv().TeamCheck = false
+
+local savedFOV = 70
 
 -------------------------------------------------
 --// FUNCTIONS
@@ -218,35 +174,6 @@ local function CreateToggle(parent, name, order, default, callback)
 	end)
 end
 
-local function CreateButton(parent, name, order, callback)
-	local Button = Instance.new("TextButton")
-	Button.Parent = parent
-	Button.Size = UDim2.new(1, 0, 0, 30)
-	Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	Button.Text = name
-	Button.TextColor3 = Color3.fromRGB(200, 200, 200)
-	Button.Font = Enum.Font.Gotham
-	Button.TextSize = 13
-	Button.BorderSizePixel = 0
-	Button.LayoutOrder = order
-
-	local BtnCorner = Instance.new("UICorner")
-	BtnCorner.CornerRadius = UDim.new(0, 6)
-	BtnCorner.Parent = Button
-
-	Button.MouseEnter:Connect(function()
-		Button.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
-	end)
-
-	Button.MouseLeave:Connect(function()
-		Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	end)
-
-	Button.MouseButton1Click:Connect(function()
-		callback()
-	end)
-end
-
 -------------------------------------------------
 --// GUI
 -------------------------------------------------
@@ -260,7 +187,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 260, 0, 380)
+MainFrame.Size = UDim2.new(0, 260, 0, 420)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 
@@ -282,7 +209,7 @@ Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Soft Aim.exe"
+Title.Text = "Hitbox Expander"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -342,16 +269,17 @@ CreateSlider(Content, "Transparency", 2, 0, 1, 0.9, function(value)
 	getgenv().HitboxTransparency = value
 end)
 
-CreateToggle(Content, "Status", 3, false, function(state)
+CreateSlider(Content, "FOV", 3, 60, 120, 70, function(value)
+	savedFOV = value
+	workspace.CurrentCamera.FieldOfView = value
+end)
+
+CreateToggle(Content, "Status", 4, false, function(state)
 	getgenv().HitboxStatus = state
 end)
 
-CreateToggle(Content, "Team Check", 4, false, function(state)
+CreateToggle(Content, "Team Check", 5, false, function(state)
 	getgenv().TeamCheck = state
-end)
-
-CreateButton(Content, "No Recoil Gun", 5, function()
-	-- à connecter plus tard
 end)
 
 -------------------------------------------------
@@ -364,12 +292,20 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 -------------------------------------------------
+--// FOV PERSISTE AU RESPAWN
+-------------------------------------------------
+LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(1)
+	workspace.CurrentCamera.FieldOfView = savedFOV
+end)
+
+-------------------------------------------------
 --// HITBOX LOGIC
 -------------------------------------------------
 RunService.RenderStepped:Connect(function()
 	if getgenv().HitboxStatus == true and getgenv().TeamCheck == false then
 		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+			if v.Name ~= LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
 				pcall(function()
 					v.Character.Head.Size = Vector3.new(getgenv().HitboxSize, getgenv().HitboxSize, getgenv().HitboxSize)
 					v.Character.Head.Transparency = getgenv().HitboxTransparency
@@ -381,7 +317,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	elseif getgenv().HitboxStatus == true and getgenv().TeamCheck == true then
 		for i,v in next, Players:GetPlayers() do
-			local localTeam = Players.LocalPlayer.Team
+			local localTeam = LocalPlayer.Team
 			local enemyTeam = v.Team
 			if localTeam and enemyTeam and localTeam ~= enemyTeam then
 				pcall(function()
@@ -395,7 +331,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	else
 		for i,v in next, Players:GetPlayers() do
-			if v.Name ~= Players.LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
+			if v.Name ~= LocalPlayer.Name and v.Character and v.Character:FindFirstChild("Head") then
 				pcall(function()
 					v.Character.Head.Size = Vector3.new(1, 1, 1)
 					v.Character.Head.Transparency = 1
